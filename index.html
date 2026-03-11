@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Impulso Tecnocreativo — CRTIC</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:  #000000;
+      --white:  #ffffff;
+      --green:  #00e87a;
+      --purple: #a855f7;
+      --blue:   #3b82f6;
+      --muted:  rgba(255,255,255,0.38);
+      --border: rgba(255,255,255,0.09);
+    }
+
+    html { background: var(--black); scroll-behavior: smooth; }
+
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: 'Inter', -apple-system, sans-serif;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* ── CUSTOM CURSOR ── */
+    #cursor {
+      position: fixed;
+      width: 8px; height: 8px;
+      background: var(--white);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: width .2s, height .2s, background .2s, opacity .2s;
+      mix-blend-mode: difference;
+    }
+    #cursor.hover {
+      width: 32px; height: 32px;
+      background: var(--green);
+      mix-blend-mode: normal;
+      opacity: .6;
+    }
+    a, button { cursor: none; }
+
+    /* ── SCROLL PROGRESS BAR ── */
+    #scroll-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 1px;
+      width: 0%;
+      background: var(--green);
+      z-index: 500;
+      transition: width .08s linear;
+    }
+
+    /* ── LOADING ── */
+    #loading {
+      position: fixed; inset: 0;
+      background: var(--black);
+      z-index: 9000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      transition: opacity .8s ease;
+    }
+    #loading.out { opacity: 0; pointer-events: none; }
+    .load-label {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px; font-weight: 500;
+      letter-spacing: .38em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .load-track {
+      width: 180px; height: 1px;
+      background: rgba(255,255,255,.08);
+    }
+    .load-fill {
+      height: 1px;
+      background: var(--green);
+      width: 0%;
+      transition: width .08s linear;
+    }
+    .load-pct {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px; font-weight: 300;
+      letter-spacing: .1em;
+      color: rgba(255,255,255,.2);
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 200;
+      padding: 28px 48px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .nav-logo img {
+      height: 28px;
+      width: auto;
+      display: block;
+    }
+    .nav-logo span {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: .32em;
+      text-transform: uppercase;
+      opacity: .45;
+    }
+    .nav-right {
+      display: flex; align-items: center; gap: 36px;
+    }
+    .nav-link {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px; font-weight: 400;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .nav-link:hover { color: var(--white); }
+    .nav-btn {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--black);
+      background: var(--white);
+      padding: 12px 24px;
+      text-decoration: none;
+      transition: background .2s;
+      display: inline-block;
+    }
+    .nav-btn:hover { background: var(--green); }
+
+    /* ── PROGRESS DOTS ── */
+    #prog-nav {
+      position: fixed;
+      right: 28px; top: 50%;
+      transform: translateY(-50%);
+      z-index: 200;
+      display: flex; flex-direction: column; gap: 9px;
+    }
+    .pdot {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.18);
+      transition: background .3s, transform .3s;
+      cursor: none;
+    }
+    .pdot.on {
+      background: var(--green);
+      transform: scale(1.75);
+    }
+
+    /* ── CANVAS SECTION ── */
+    #canvas-wrap { position: relative; height: 700vh; }
+    #sticky {
+      position: sticky; top: 0;
+      height: 100vh; width: 100%;
+      overflow: hidden;
+    }
+    #c {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      display: block;
+    }
+
+    /* ── TEXT LAYERS ── */
+    .tl {
+      position: absolute; inset: 0;
+      display: flex; align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      will-change: opacity;
+    }
+    .tl.live { pointer-events: auto; }
+
+    .ti {
+      padding: 0 0 0 8vw;
+      max-width: 44vw;
+      position: relative;
+      z-index: 2;
+    }
+
+    .tag {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px; font-weight: 500;
+      letter-spacing: .38em;
+      text-transform: uppercase;
+      color: var(--green);
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 22px;
+    }
+    .tag::before {
+      content: '';
+      display: inline-block;
+      width: 20px; height: 1px;
+      background: var(--green);
+      flex-shrink: 0;
+    }
+
+    .d1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(48px, 6.8vw, 100px);
+      font-weight: 700;
+      line-height: .93;
+      letter-spacing: -.035em;
+      text-transform: uppercase;
+    }
+    .d2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(34px, 4.8vw, 72px);
+      font-weight: 300;
+      line-height: 1.08;
+      letter-spacing: -.025em;
+    }
+    .em { color: var(--green); }
+    .em2 { color: var(--purple); }
+
+    .rule { width: 36px; height: 1px; background: var(--border); margin: 24px 0; }
+
+    .body {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px; font-weight: 300;
+      line-height: 1.78;
+      color: var(--muted);
+      max-width: 340px;
+    }
+
+    /* Huge background number */
+    .bg-n {
+      position: absolute;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(130px, 20vw, 260px);
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -.06em;
+      color: rgba(255,255,255,.035);
+      left: 6vw;
+      top: 50%;
+      transform: translateY(-54%);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* Step progress indicator */
+    .step-prog {
+      display: flex; gap: 6px;
+      align-items: center;
+      margin-top: 28px;
+    }
+    .sp-dot {
+      width: 20px; height: 1px;
+      background: rgba(255,255,255,.2);
+      transition: background .3s, width .3s;
+    }
+    .sp-dot.on { width: 32px; background: var(--green); }
+
+    /* Scroll hint */
+    .scroll-hint {
+      position: absolute;
+      bottom: 36px; left: 8vw;
+      display: flex; flex-direction: column;
+      align-items: flex-start; gap: 6px;
+    }
+    .sh-line {
+      width: 1px; height: 44px;
+      background: linear-gradient(to bottom, rgba(255,255,255,.3), transparent);
+      animation: shAnim 1.8s ease-in-out infinite;
+    }
+    @keyframes shAnim {
+      0%, 100% { opacity: .2; transform: scaleY(.4) translateY(-40%); }
+      50% { opacity: 1; transform: scaleY(1) translateY(0); }
+    }
+    .sh-txt {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 9px; font-weight: 400;
+      letter-spacing: .35em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.25);
+    }
+
+    /* Inline CTA button */
+    .btn-sm {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--black);
+      background: var(--white);
+      padding: 14px 28px;
+      text-decoration: none;
+      margin-top: 28px;
+      transition: background .2s;
+    }
+    .btn-sm:hover { background: var(--green); }
+    .btn-sm svg { flex-shrink: 0; }
+
+    /* ── PROCESS SECTION ── */
+    #process {
+      background: var(--black);
+      border-top: 1px solid var(--border);
+      padding: 110px 8vw 120px;
+    }
+    .sec-top {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      margin-bottom: 80px;
+      align-items: end;
+    }
+    .sec-label {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px; font-weight: 500;
+      letter-spacing: .38em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 16px;
+    }
+    .sec-h {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(30px, 4vw, 56px);
+      font-weight: 700;
+      line-height: 1.02;
+      letter-spacing: -.03em;
+    }
+    .sec-p {
+      font-family: 'Inter', sans-serif;
+      font-size: 15px; font-weight: 300;
+      line-height: 1.78;
+      color: var(--muted);
+      max-width: 400px;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+    }
+    .card {
+      background: rgba(255,255,255,.025);
+      border: 1px solid var(--border);
+      padding: 44px 36px 48px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color .3s;
+    }
+    .card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, var(--green), transparent);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform .4s ease;
+    }
+    .card:hover { border-color: rgba(0,232,122,.3); }
+    .card:hover::after { transform: scaleX(1); }
+    .card-n {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px; font-weight: 500;
+      letter-spacing: .35em;
+      color: var(--green);
+      margin-bottom: 28px;
+    }
+    .card-h {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px; font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -.02em;
+      margin-bottom: 10px;
+    }
+    .card-sub {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px; font-weight: 500;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--green);
+      opacity: .6;
+      margin-bottom: 18px;
+    }
+    .card-p {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px; font-weight: 300;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+    .card-tag {
+      display: inline-block;
+      margin-top: 24px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 9px; font-weight: 500;
+      letter-spacing: .28em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.08);
+      padding: 5px 10px;
+    }
+
+    /* ── CTA ── */
+    #cta {
+      background: var(--black);
+      border-top: 1px solid var(--border);
+      padding: 130px 8vw 110px;
+    }
+    .cta-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 80px;
+      align-items: end;
+    }
+    .cta-h {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(40px, 6.5vw, 92px);
+      font-weight: 700;
+      line-height: .93;
+      letter-spacing: -.04em;
+    }
+    .cta-h em { font-style: normal; color: var(--green); }
+    .cta-side {
+      display: flex; flex-direction: column;
+      gap: 14px; align-items: flex-end;
+      padding-bottom: 6px;
+    }
+    .btn-lg {
+      display: inline-flex; align-items: center; gap: 12px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--black);
+      background: var(--white);
+      padding: 18px 34px;
+      text-decoration: none;
+      transition: background .2s;
+      white-space: nowrap;
+    }
+    .btn-lg:hover { background: var(--green); }
+    .btn-txt {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px; font-weight: 400;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .btn-txt:hover { color: var(--white); }
+
+    /* Contact form */
+    #contact {
+      background: var(--black);
+      border-top: 1px solid var(--border);
+      padding: 100px 8vw;
+    }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: start;
+    }
+    .contact-lbl { font-size: 10px; font-weight: 500; letter-spacing: .38em; text-transform: uppercase; color: var(--green); margin-bottom: 14px; font-family: 'Space Grotesk', sans-serif; }
+    .contact-h { font-family: 'Space Grotesk', sans-serif; font-size: clamp(28px, 3.5vw, 48px); font-weight: 700; line-height: 1.05; letter-spacing: -.03em; margin-bottom: 20px; }
+    .contact-p { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 300; line-height: 1.78; color: var(--muted); max-width: 380px; margin-bottom: 36px; }
+    .contact-info { display: flex; flex-direction: column; gap: 10px; }
+    .ci { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 300; color: var(--muted); display: flex; gap: 12px; align-items: center; }
+    .ci strong { color: var(--white); font-weight: 400; }
+    form { display: flex; flex-direction: column; gap: 14px; }
+    .field {
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .field label {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 9px; font-weight: 500;
+      letter-spacing: .3em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.3);
+    }
+    .field input, .field select, .field textarea {
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px; font-weight: 300;
+      padding: 13px 16px;
+      outline: none;
+      transition: border-color .2s;
+      width: 100%;
+      -webkit-appearance: none;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--green);
+    }
+    .field textarea { resize: vertical; min-height: 100px; }
+    .field select option { background: #111; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .btn-submit {
+      align-self: flex-start;
+      display: inline-flex; align-items: center; gap: 10px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: .22em; text-transform: uppercase;
+      color: var(--black); background: var(--white);
+      padding: 15px 28px; border: none;
+      transition: background .2s; margin-top: 4px;
+    }
+    .btn-submit:hover { background: var(--green); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--black);
+      border-top: 1px solid var(--border);
+      padding: 32px 8vw;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .f-logo img {
+      height: 24px;
+      width: auto;
+      display: block;
+      opacity: .7;
+    }
+    .f-copy {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px; font-weight: 300;
+      color: rgba(255,255,255,.2);
+    }
+
+    /* ── REVEAL ── */
+    .rv { opacity: 0; transform: translateY(22px); transition: opacity .85s ease, transform .85s ease; }
+    .rv.in { opacity: 1; transform: translateY(0); }
+    .rv.d1 { transition-delay: .1s; } /* Note: this conflicts with class name .d1 above — use .rv-d instead */
+    .rv-d1 { transition-delay: .12s; }
+    .rv-d2 { transition-delay: .24s; }
+    .rv-d3 { transition-delay: .36s; }
+
+    /* ── SELECTION ── */
+    ::selection { background: var(--green); color: var(--black); }
+
+    /* ── MOBILE ── */
+    @media (max-width: 768px) {
+      nav { padding: 20px 24px; }
+      .nav-link { display: none; }
+      .nav-btn { font-size: 9px; padding: 10px 16px; }
+      #prog-nav { display: none; }
+      .ti { padding: 0 0 0 6vw; max-width: 88vw; }
+      .d1 { font-size: clamp(38px, 9vw, 64px); }
+      .d2 { font-size: clamp(26px, 6.5vw, 48px); }
+      .tl { align-items: flex-end; padding-bottom: 52px; }
+      .bg-n { display: none; }
+      .sec-top { grid-template-columns: 1fr; gap: 28px; }
+      .cards { grid-template-columns: 1fr; gap: 2px; }
+      .cta-grid { grid-template-columns: 1fr; gap: 40px; }
+      .cta-side { align-items: flex-start; }
+      .contact-grid { grid-template-columns: 1fr; gap: 48px; }
+      .form-row { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 12px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Custom cursor -->
+  <div id="cursor"></div>
+
+  <!-- Scroll progress -->
+  <div id="scroll-bar"></div>
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="load-label">Cargando experiencia</div>
+    <div class="load-track"><div class="load-fill" id="lf"></div></div>
+    <div class="load-pct" id="lpct">0%</div>
+  </div>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-logo">
+      <img src="logo.png" alt="CRTIC">
+      <span>CRTIC</span>
+    </div>
+    <div class="nav-right">
+      <a href="#process" class="nav-link">Proceso</a>
+      <a href="#contact" class="nav-link">Contacto</a>
+      <a href="#contact" class="nav-btn">Hablar con un experto</a>
+    </div>
+  </nav>
+
+  <!-- Progress dots -->
+  <div id="prog-nav"></div>
+
+  <!-- ════════════ CANVAS SECTION ════════════ -->
+  <div id="canvas-wrap">
+    <div id="sticky">
+      <canvas id="c"></canvas>
+
+      <!-- 0: HERO -->
+      <div class="tl" data-s="0">
+        <div class="ti">
+          <div class="tag">Dirección de Innovación Tecnocreativa</div>
+          <div class="d1">IMPULSO<br><span class="em">TECNO</span><br>CREATIVO</div>
+          <div class="rule"></div>
+          <p class="body">Ayudamos a empresas a resolver desafíos reales de hoy y a co-crear las innovaciones del mañana.</p>
+        </div>
+        <div class="scroll-hint">
+          <div class="sh-line"></div>
+          <div class="sh-txt">Scroll</div>
+        </div>
+      </div>
+
+      <!-- 1: PROBLEMA -->
+      <div class="tl" data-s="1">
+        <div class="ti">
+          <div class="tag">El desafío</div>
+          <div class="d2">Las empresas de hoy<br>enfrentan desafíos<br>reales. <span class="em">Hoy.</span></div>
+          <div class="rule"></div>
+          <p class="body">Innovar sin metodología es costoso, incierto y lento. La tecnología por sí sola no resuelve problemas de negocio —los complica.</p>
+        </div>
+      </div>
+
+      <!-- 2: SOLUCIÓN -->
+      <div class="tl" data-s="2">
+        <div class="ti">
+          <div class="tag">La solución</div>
+          <div class="d2">Tecnología<br>avanzada más<br>pensamiento<br><span class="em">creativo.</span></div>
+          <div class="rule"></div>
+          <p class="body">El Impulso Tecnocreativo une dos fuerzas complementarias para reducir el riesgo de innovar y llevar tu empresa al siguiente nivel.</p>
+        </div>
+      </div>
+
+      <!-- 3: PASO 01 -->
+      <div class="tl" data-s="3">
+        <div class="bg-n" aria-hidden="true">01</div>
+        <div class="ti">
+          <div class="tag">Paso 01 de 03</div>
+          <div class="d1">DIAG-<br>NÓS-<br>TICO</div>
+          <div class="rule"></div>
+          <p class="body">Analizamos tu desafío para encontrar la solución correcta —antes de gastar en tecnología. Usamos la metodología de Art Thinking para ver el problema desde un ángulo completamente nuevo.</p>
+          <div class="step-prog">
+            <div class="sp-dot on"></div>
+            <div class="sp-dot"></div>
+            <div class="sp-dot"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4: PASO 02 -->
+      <div class="tl" data-s="4">
+        <div class="bg-n" aria-hidden="true">02</div>
+        <div class="ti">
+          <div class="tag">Paso 02 de 03</div>
+          <div class="d1">PROTO-<br>TIPADO</div>
+          <div class="rule"></div>
+          <p class="body">Construimos la solución en nuestro Sandbox tecnocreativo para que el riesgo sea nuestro, no tuyo. Iteramos rápido y llegamos a lo que funciona.</p>
+          <div class="step-prog">
+            <div class="sp-dot"></div>
+            <div class="sp-dot on"></div>
+            <div class="sp-dot"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5: PASO 03 -->
+      <div class="tl" data-s="5">
+        <div class="bg-n" aria-hidden="true">03</div>
+        <div class="ti">
+          <div class="tag">Paso 03 de 03</div>
+          <div class="d1">TRANS-<br>FEREN-<br>CIA</div>
+          <div class="rule"></div>
+          <p class="body">Implementamos la solución y capacitamos a tu equipo para que seas 100% autónomo. La innovación queda en tus manos —no en las nuestras.</p>
+          <div class="step-prog">
+            <div class="sp-dot"></div>
+            <div class="sp-dot"></div>
+            <div class="sp-dot on"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6: CTA final de animación -->
+      <div class="tl" data-s="6">
+        <div class="ti">
+          <div class="tag">¿Listo para el salto?</div>
+          <div class="d1">CO-CREA<br>EL <span class="em2">MA-<br>ÑANA</span></div>
+          <div class="rule"></div>
+          <p class="body">Hablemos de tu desafío. Sin compromisos, sin tecnicismos —solo una conversación honesta sobre cómo podemos ayudarte a innovar.</p>
+          <a href="#contact" class="btn-sm">
+            Hablar con un experto
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </div>
+      </div>
+
+    </div><!-- /sticky -->
+  </div><!-- /canvas-wrap -->
+
+  <!-- ════════════ PROCESO ════════════ -->
+  <section id="process">
+    <div class="sec-top">
+      <div>
+        <div class="sec-label rv">El proceso</div>
+        <h2 class="sec-h rv rv-d1">Tres pasos.<br>Un resultado.</h2>
+      </div>
+      <div>
+        <p class="sec-p rv rv-d2">El Impulso Tecnocreativo está diseñado para minimizar el riesgo en cada etapa. Avanzamos solo cuando el paso anterior está validado y el camino es claro.</p>
+      </div>
+    </div>
+    <div class="cards">
+      <div class="card rv rv-d1">
+        <div class="card-n">01</div>
+        <div class="card-h">Diagnóstico</div>
+        <div class="card-sub">Art Thinking</div>
+        <p class="card-p">Analizamos tu desafío para encontrar la solución correcta —antes de gastar en tecnología. Usamos la metodología Art Thinking para desafiar los supuestos y revelar la raíz real del problema.</p>
+        <span class="card-tag">Análisis · Metodología · Claridad</span>
+      </div>
+      <div class="card rv rv-d2">
+        <div class="card-n">02</div>
+        <div class="card-h">Prototipado en Laboratorio</div>
+        <div class="card-sub">Sandbox Tecnocreativo</div>
+        <p class="card-p">Construimos la solución en nuestro Sandbox tecnocreativo con tecnología de punta. Iteramos rápido para que el riesgo quede de nuestro lado —no del tuyo.</p>
+        <span class="card-tag">Prototipo · Validación · Velocidad</span>
+      </div>
+      <div class="card rv rv-d3">
+        <div class="card-n">03</div>
+        <div class="card-h">Transferencia</div>
+        <div class="card-sub">100% Autonomía</div>
+        <p class="card-p">Implementamos la solución y capacitamos a tu equipo para que seas completamente autónomo. La innovación queda integrada en tu organización para siempre.</p>
+        <span class="card-tag">Implementación · Capacitación · Autonomía</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ CTA ════════════ -->
+  <section id="cta">
+    <div class="cta-grid">
+      <h2 class="cta-h rv">Co-crea las<br>innovaciones<br>del <em>mañana.</em></h2>
+      <div class="cta-side rv rv-d1">
+        <a href="#contact" class="btn-lg">
+          Hablar con un experto
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="#process" class="btn-txt">Ver el proceso →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ CONTACTO ════════════ -->
+  <section id="contact">
+    <div class="contact-grid">
+      <div>
+        <div class="contact-lbl rv">Contacto</div>
+        <h3 class="contact-h rv rv-d1">Empecemos<br>la conversación.</h3>
+        <p class="contact-p rv rv-d2">Cuéntanos tu desafío. En 48 horas recibirás una invitación a una sesión de diagnóstico inicial —sin costo ni compromiso.</p>
+        <div class="contact-info rv rv-d3">
+          <div class="ci"><strong>Centro Revolución Tecnológica en Industrias Creativas</strong></div>
+          <div class="ci">Dirección de Innovación Tecnocreativa</div>
+          <div class="ci"><strong>Email:</strong> innovacion@crtic.cl</div>
+        </div>
+      </div>
+      <div>
+        <form id="contact-form">
+          <div class="form-row">
+            <div class="field">
+              <label for="nombre">Nombre</label>
+              <input type="text" id="nombre" name="nombre" placeholder="Tu nombre" required>
+            </div>
+            <div class="field">
+              <label for="empresa">Empresa</label>
+              <input type="text" id="empresa" name="empresa" placeholder="Tu empresa" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="tu@empresa.com" required>
+          </div>
+          <div class="field">
+            <label for="sector">Sector</label>
+            <select id="sector" name="sector">
+              <option value="">Selecciona tu sector</option>
+              <option>Industrias Creativas</option>
+              <option>Tecnología</option>
+              <option>Retail &amp; Consumo</option>
+              <option>Servicios Financieros</option>
+              <option>Salud</option>
+              <option>Educación</option>
+              <option>Manufactura</option>
+              <option>Otro</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="desafio">Tu desafío</label>
+            <textarea id="desafio" name="desafio" placeholder="Describe brevemente el desafío que quieres resolver..." required></textarea>
+          </div>
+          <button type="submit" class="btn-submit">
+            Enviar
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ FOOTER ════════════ -->
+  <footer>
+    <div class="f-logo"><img src="logo.png" alt="CRTIC"></div>
+    <div class="f-copy">© 2025 Centro Revolución Tecnológica en Industrias Creativas. Todos los derechos reservados.</div>
+  </footer>
+
+  <script>
+    // ══════════════════════════════════════════
+    //  CONFIG
+    // ══════════════════════════════════════════
+    const TOTAL   = 122;
+    const NSEC    = 7;
+    const DIR     = 'frames/';
+    const PAD     = 3;
+
+    // ══════════════════════════════════════════
+    //  ELEMENTS
+    // ══════════════════════════════════════════
+    const canvas    = document.getElementById('c');
+    const ctx       = canvas.getContext('2d');
+    const loading   = document.getElementById('loading');
+    const lf        = document.getElementById('lf');
+    const lpct      = document.getElementById('lpct');
+    const wrap      = document.getElementById('canvas-wrap');
+    const layers    = document.querySelectorAll('.tl');
+    const progNav   = document.getElementById('prog-nav');
+    const scrollBar = document.getElementById('scroll-bar');
+    const cursor    = document.getElementById('cursor');
+
+    // ══════════════════════════════════════════
+    //  STATE
+    // ══════════════════════════════════════════
+    const imgs     = new Array(TOTAL);
+    let loaded     = 0;
+    let ready      = false;
+    let curFrame   = 0;
+
+    // ══════════════════════════════════════════
+    //  CURSOR
+    // ══════════════════════════════════════════
+    document.addEventListener('mousemove', e => {
+      cursor.style.left = e.clientX + 'px';
+      cursor.style.top  = e.clientY + 'px';
+    });
+    document.querySelectorAll('a, button, .pdot').forEach(el => {
+      el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+      el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+    });
+
+    // ══════════════════════════════════════════
+    //  PROGRESS DOTS
+    // ══════════════════════════════════════════
+    const dotLabels = ['Inicio','Desafío','Solución','Diagnóstico','Prototipado','Transferencia','Comenzar'];
+    dotLabels.forEach((lbl, i) => {
+      const d = document.createElement('div');
+      d.className = 'pdot';
+      d.title = lbl;
+      d.addEventListener('click', () => {
+        const h   = wrap.offsetHeight - window.innerHeight;
+        const pct = i / NSEC;
+        const top = wrap.offsetTop + h * pct;
+        window.scrollTo({ top, behavior: 'smooth' });
+      });
+      progNav.appendChild(d);
+    });
+
+    // ══════════════════════════════════════════
+    //  CANVAS SIZING
+    // ══════════════════════════════════════════
+    function resize() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+      if (imgs[curFrame]?.complete) draw(curFrame);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // ══════════════════════════════════════════
+    //  DRAW
+    // ══════════════════════════════════════════
+    function draw(idx) {
+      const img = imgs[idx];
+      if (!img?.complete || !img.naturalWidth) return;
+
+      const iw = img.naturalWidth;
+      const ih = img.naturalHeight;
+      const cw = canvas.width;
+      const ch = canvas.height;
+      const mob = cw < 768;
+
+      ctx.clearRect(0, 0, cw, ch);
+
+      let size, cx, cy;
+      if (mob) {
+        size = cw * 0.88;
+        cx   = cw * 0.50;
+        cy   = ch * 0.36;
+      } else {
+        size = ch * 0.82;
+        cx   = cw * 0.695;
+        cy   = ch * 0.50;
+      }
+
+      const aspect = iw / ih;
+      const fh = size;
+      const fw = fh * aspect;
+
+      ctx.drawImage(img, cx - fw / 2, cy - fh / 2, fw, fh);
+      curFrame = idx;
+    }
+
+    // ══════════════════════════════════════════
+    //  PRELOAD
+    // ══════════════════════════════════════════
+    function preload() {
+      // Load first frames of each section as priority
+      const priority = Array.from({ length: NSEC }, (_, i) =>
+        Math.round(i / NSEC * (TOTAL - 1))
+      );
+      const rest = Array.from({ length: TOTAL }, (_, i) => i)
+        .filter(i => !priority.includes(i));
+      const order = [...priority, ...rest];
+
+      order.forEach(i => {
+        const img = new Image();
+        img.onload = img.onerror = () => {
+          loaded++;
+          const p = loaded / TOTAL;
+          lf.style.width   = (p * 100) + '%';
+          lpct.textContent = Math.round(p * 100) + '%';
+
+          // Show page after priority frames loaded
+          if (loaded === priority.length && !ready) {
+            ready = true;
+            draw(0);
+            setTimeout(() => {
+              loading.classList.add('out');
+              setTimeout(() => loading.style.display = 'none', 900);
+            }, 200);
+          }
+        };
+        img.src  = DIR + 'frame_' + String(i).padStart(PAD, '0') + '.jpg';
+        imgs[i] = img;
+      });
+    }
+
+    // ══════════════════════════════════════════
+    //  SCROLL
+    // ══════════════════════════════════════════
+    let raf = false;
+
+    function onScroll() {
+      if (!raf) { requestAnimationFrame(tick); raf = true; }
+    }
+
+    function tick() {
+      raf = false;
+
+      const st  = wrap.offsetTop;
+      const sh  = wrap.offsetHeight;
+      const vh  = window.innerHeight;
+      const sy  = window.scrollY;
+
+      // progress in [0,1] across animated section
+      const prog = Math.max(0, Math.min(1, (sy - st) / (sh - vh)));
+
+      // Scroll bar (whole page)
+      const pageH = document.body.scrollHeight - vh;
+      scrollBar.style.width = (sy / pageH * 100) + '%';
+
+      // Frame
+      const fi = Math.round(prog * (TOTAL - 1));
+      if (fi !== curFrame) draw(fi);
+
+      // Section
+      const secF  = prog * NSEC;
+      const secI  = Math.min(NSEC - 1, Math.floor(secF));
+      const secP  = secF - Math.floor(secF); // 0..1 within section
+
+      // Update dots
+      document.querySelectorAll('.pdot').forEach((d, i) =>
+        d.classList.toggle('on', i === secI)
+      );
+
+      // Text layers
+      layers.forEach(layer => {
+        const s = parseInt(layer.dataset.s);
+        let op = 0;
+
+        if (prog <= 0 && s === 0) {
+          op = 1;
+        } else if (prog >= 1 && s === NSEC - 1) {
+          op = 1;
+        } else if (s === secI) {
+          const fi_ = 0.14, fo_ = 0.86;
+          if (secP < fi_) {
+            op = secP / fi_;
+          } else if (secP > fo_ && s < NSEC - 1) {
+            op = 1 - (secP - fo_) / (1 - fo_);
+          } else {
+            op = 1;
+          }
+        }
+
+        op = Math.max(0, Math.min(1, op));
+        layer.style.opacity = op;
+        layer.classList.toggle('live', op > 0.02);
+      });
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // ══════════════════════════════════════════
+    //  REVEAL OBSERVER
+    // ══════════════════════════════════════════
+    const revObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          revObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+
+    document.querySelectorAll('.rv').forEach(el => revObs.observe(el));
+
+    // ══════════════════════════════════════════
+    //  FORM
+    // ══════════════════════════════════════════
+    document.getElementById('contact-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const btn = e.target.querySelector('.btn-submit');
+      btn.textContent = '¡Enviado! Nos ponemos en contacto pronto.';
+      btn.style.background = 'var(--green)';
+      btn.style.width = 'auto';
+      btn.disabled = true;
+    });
+
+    // ══════════════════════════════════════════
+    //  INIT
+    // ══════════════════════════════════════════
+    preload();
+    onScroll();
+  </script>
+</body>
+</html>
