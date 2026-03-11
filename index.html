@@ -34,22 +34,29 @@
     /* ── CUSTOM CURSOR ── */
     #cursor {
       position: fixed;
-      width: 8px; height: 8px;
+      width: 10px; height: 10px;
       background: var(--white);
       border-radius: 50%;
       pointer-events: none;
       z-index: 9999;
       transform: translate(-50%, -50%);
-      transition: width .2s, height .2s, background .2s, opacity .2s;
-      mix-blend-mode: difference;
+      transition: width .15s, height .15s;
+      box-shadow: 0 0 8px 2px rgba(0, 230, 255, 0.55);
     }
     #cursor.hover {
-      width: 32px; height: 32px;
-      background: var(--green);
-      mix-blend-mode: normal;
-      opacity: .6;
+      width: 30px; height: 30px;
+      background: rgba(0, 230, 255, 0.15);
+      border: 1px solid rgba(0, 230, 255, 0.75);
+      box-shadow: 0 0 18px 4px rgba(0, 230, 255, 0.35);
     }
     a, button { cursor: none; }
+
+    /* ── FLAME TRAIL CANVAS ── */
+    #trail-c {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      z-index: 9998;
+    }
 
     /* ── SCROLL PROGRESS BAR ── */
     #scroll-bar {
@@ -578,7 +585,8 @@
 </head>
 <body>
 
-  <!-- Custom cursor -->
+  <!-- Custom cursor + flame trail canvas -->
+  <canvas id="trail-c"></canvas>
   <div id="cursor"></div>
 
   <!-- Scroll progress -->
@@ -855,16 +863,104 @@
     let curFrame   = 0;
 
     // ══════════════════════════════════════════
-    //  CURSOR
+    //  CURSOR + FLAME TRAIL
     // ══════════════════════════════════════════
+    const trailC = document.getElementById('trail-c');
+    const tc     = trailC.getContext('2d');
+
+    function resizeTrail() {
+      trailC.width  = window.innerWidth;
+      trailC.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeTrail);
+    resizeTrail();
+
+    let mx = 0, my = 0, px = 0, py = 0;
+    let cvx = 0, cvy = 0;
+    let cursorMoving = false;
+    let stopTimer = null;
+    const pts = [];  // particle pool
+
     document.addEventListener('mousemove', e => {
-      cursor.style.left = e.clientX + 'px';
-      cursor.style.top  = e.clientY + 'px';
+      px = mx; py = my;
+      mx = e.clientX; my = e.clientY;
+      cvx = mx - px; cvy = my - py;
+      cursorMoving = true;
+      clearTimeout(stopTimer);
+      stopTimer = setTimeout(() => { cursorMoving = false; }, 80);
+      cursor.style.left = mx + 'px';
+      cursor.style.top  = my + 'px';
     });
+
     document.querySelectorAll('a, button, .pdot').forEach(el => {
       el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
       el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
     });
+
+    function spawnFlame() {
+      if (!cursorMoving) return;
+      const speed = Math.sqrt(cvx * cvx + cvy * cvy);
+      if (speed < 0.8) return;
+
+      const baseAngle = Math.atan2(-cvy, -cvx);          // opposite to movement
+      const count = Math.min(2 + Math.floor(speed * 0.35), 9);
+
+      for (let i = 0; i < count; i++) {
+        const spread = (Math.random() - 0.5) * 0.85;      // ±24° spread
+        const angle  = baseAngle + spread;
+        const s      = (0.7 + Math.random() * 0.9) * Math.min(speed * 0.22 + 1.2, 5.5);
+        pts.push({
+          x:     mx + (Math.random() - 0.5) * 5,
+          y:     my + (Math.random() - 0.5) * 5,
+          vx:    Math.cos(angle) * s,
+          vy:    Math.sin(angle) * s,
+          life:  0.75 + Math.random() * 0.25,
+          decay: 0.026 + Math.random() * 0.030,
+          r:     1.4 + Math.random() * 3.2,
+          hue:   182 + Math.random() * 32          // electric cyan 182–214
+        });
+      }
+    }
+
+    function flameFrame() {
+      requestAnimationFrame(flameFrame);
+      tc.clearRect(0, 0, trailC.width, trailC.height);
+
+      spawnFlame();
+      if (!pts.length) return;
+
+      tc.save();
+      tc.globalCompositeOperation = 'screen';
+
+      for (let i = pts.length - 1; i >= 0; i--) {
+        const p = pts[i];
+        p.x   += p.vx;
+        p.y   += p.vy;
+        p.vx  *= 0.91;
+        p.vy  *= 0.91;
+        p.life -= p.decay;
+
+        if (p.life <= 0) { pts.splice(i, 1); continue; }
+
+        const a    = p.life;
+        const r    = p.r * (0.25 + p.life * 0.75);
+        const glow = r * 3.2;
+
+        const g = tc.createRadialGradient(p.x, p.y, 0, p.x, p.y, glow);
+        g.addColorStop(0,    `hsla(${p.hue}, 100%, 97%, ${a * 0.95})`);
+        g.addColorStop(0.25, `hsla(${p.hue}, 100%, 72%, ${a * 0.65})`);
+        g.addColorStop(0.6,  `hsla(${p.hue}, 100%, 55%, ${a * 0.28})`);
+        g.addColorStop(1,    `hsla(${p.hue}, 100%, 50%,  0)`);
+
+        tc.beginPath();
+        tc.arc(p.x, p.y, glow, 0, Math.PI * 2);
+        tc.fillStyle = g;
+        tc.fill();
+      }
+
+      tc.restore();
+    }
+    flameFrame();
 
     // ══════════════════════════════════════════
     //  PROGRESS DOTS
