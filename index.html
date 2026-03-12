@@ -784,6 +784,10 @@
       </div>
       <div>
         <form id="contact-form">
+          <input type="hidden" name="access_key" value="fcb3110e-9c5f-4ec2-8937-9f01b8ce51c0">
+          <input type="hidden" name="subject" value="Nuevo contacto — Impulso Tecnocreativo">
+          <input type="hidden" name="from_name" value="CRTIC Web">
+          <input type="checkbox" name="botcheck" style="display:none">
           <div class="form-row">
             <div class="field">
               <label for="nombre">Nombre</label>
@@ -1156,6 +1160,53 @@
     // ══════════════════════════════════════════
     preload();
     onScroll();
+
+    // ══════════════════════════════════════════
+    //  CONTACT FORM — Web3Forms
+    // ══════════════════════════════════════════
+    const contactForm = document.getElementById('contact-form');
+    const submitBtn   = contactForm.querySelector('.btn-submit');
+
+    contactForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Loading state
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = 'Enviando…';
+
+      const data = Object.fromEntries(new FormData(contactForm));
+
+      try {
+        const res  = await fetch('https://api.web3forms.com/submit', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body:    JSON.stringify(data)
+        });
+        const json = await res.json();
+
+        if (json.success) {
+          contactForm.innerHTML = `
+            <div style="padding:48px 0;text-align:center">
+              <div style="font-size:32px;margin-bottom:16px">✓</div>
+              <p style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600;color:#fff;margin-bottom:8px">¡Mensaje recibido!</p>
+              <p style="font-family:'Inter',sans-serif;font-size:14px;font-weight:300;color:rgba(255,255,255,.55)">En menos de 48 horas recibirás una invitación a tu sesión de diagnóstico.</p>
+            </div>`;
+        } else {
+          throw new Error(json.message || 'Error');
+        }
+      } catch (err) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Enviar <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        const errMsg = contactForm.querySelector('.form-error') || (() => {
+          const d = document.createElement('p');
+          d.className = 'form-error';
+          d.style.cssText = 'font-family:Inter,sans-serif;font-size:13px;color:#ff4d6d;margin-top:12px';
+          contactForm.appendChild(d);
+          return d;
+        })();
+        errMsg.textContent = 'Hubo un error al enviar. Intenta nuevamente o escríbenos directamente.';
+      }
+    });
   </script>
 </body>
 </html>
